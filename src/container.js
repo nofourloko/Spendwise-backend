@@ -3,6 +3,7 @@
 const db = require("./models/config/database");
 
 const UserModel = require("./models/UserModel");
+const UserBudgetModel = require("./models/UserBudgetModel");
 const CategoryModel = require("./models/CategoryModel");
 const ExpenseModel = require("./models/ExpenseModel");
 const BudgetLimitModel = require("./models/BudgetLimitModel");
@@ -19,11 +20,12 @@ const BudgetLimitController = require("./models/controllers/BudgetLimitControlle
 
 const buildContainer = ({ db: dbClient = db } = {}) => {
   const userModel = new UserModel({ db: dbClient });
+  const userBudgetModel = new UserBudgetModel({ db: dbClient });
   const categoryModel = new CategoryModel({ db: dbClient });
   const expenseModel = new ExpenseModel({ db: dbClient });
   const budgetLimitModel = new BudgetLimitModel({ db: dbClient });
 
-  const userService = new UserService({ userModel });
+  const userService = new UserService({ userModel, userBudgetModel });
   const categoryService = new CategoryService({ categoryModel });
   const expenseService = new ExpenseService({
     expenseModel,
@@ -45,7 +47,7 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
 
   return {
     db: dbClient,
-    models: { userModel, categoryModel, expenseModel, budgetLimitModel },
+    models: { userModel, userBudgetModel, categoryModel, expenseModel, budgetLimitModel },
     services: {
       userService,
       categoryService,

@@ -1,14 +1,4 @@
--- ============================================
--- SEED FILE — Asystent budżetu domowego z AI
--- PostgreSQL
--- ============================================
-
--- Rozszerzenie UUID
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- ============================================
--- TABELE
--- ============================================
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,6 +6,24 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     currency VARCHAR(10) NOT NULL DEFAULT 'PLN',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_budgets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
+
+    month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
+
+    year INT NOT NULL CHECK (year >= 2000),
+
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    UNIQUE (user_id, month, year)
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -46,9 +54,7 @@ CREATE TABLE IF NOT EXISTS budget_limits (
     UNIQUE (user_id, category_id, month, year)
 );
 
--- ============================================
--- SEED — KATEGORIE (wspólne dla wszystkich)
--- ============================================
+TRUNCATE TABLE expenses, budget_limits, user_budgets, users, categories RESTART IDENTITY CASCADE;
 
 INSERT INTO categories (id, name, icon, color) VALUES
     ('a1000000-0000-0000-0000-000000000001', 'Jedzenie',        'fork-knife',     '#1D9E75'),
@@ -63,17 +69,10 @@ INSERT INTO categories (id, name, icon, color) VALUES
     ('a1000000-0000-0000-0000-000000000010', 'Inne',            'dots',           '#B4B2A9')
 ON CONFLICT (id) DO NOTHING;
 
--- ============================================
--- SEED — UŻYTKOWNIK TESTOWY
--- ============================================
-
 INSERT INTO users (id, email, name, currency, created_at) VALUES
     ('b1000000-0000-0000-0000-000000000001', 'test@grosz.app', 'Jan Kowalski', 'PLN', NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- ============================================
--- SEED — PRZYKŁADOWE WYDATKI (kwiecień 2026)
--- ============================================
 
 INSERT INTO expenses (user_id, category_id, amount, description, expense_date, source) VALUES
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 45.99,  'Biedronka — zakupy tygodniowe',   '2026-04-01', 'ocr'),
@@ -95,9 +94,6 @@ INSERT INTO expenses (user_id, category_id, amount, description, expense_date, s
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000002', 85.00,  'Paliwo — dłuższa trasa',          '2026-04-24', 'ocr'),
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 67.40,  'Biedronka — weekend',             '2026-04-26', 'ocr');
 
--- ============================================
--- SEED — LIMITY BUDŻETOWE (kwiecień 2026)
--- ============================================
 
 INSERT INTO budget_limits (user_id, category_id, monthly_limit, month, year) VALUES
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 500.00,  4, 2026),
@@ -111,3 +107,17 @@ INSERT INTO budget_limits (user_id, category_id, monthly_limit, month, year) VAL
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000009', 150.00,  4, 2026),
     ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000010', 100.00,  4, 2026)
 ON CONFLICT (user_id, category_id, month, year) DO NOTHING;
+
+INSERT INTO user_budgets (
+    user_id,
+    amount,
+    month,
+    year
+)
+VALUES (
+    'b1000000-0000-0000-0000-000000000001',
+    5000.00,
+    4,
+    2026
+)
+ON CONFLICT (user_id, month, year) DO NOTHING;

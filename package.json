@@ -10,7 +10,7 @@
     "build": "node scripts/build.js",
     "build:check": "node --check server.js",
     "start:prod": "node dist/server.js",
-    "db:seed": "psql $DATABASE_URL -f src/db/seed.sql"
+    "db:seed": "node scripts/seed.js"
   },
   "dependencies": {
     "compression": "^1.7.4",

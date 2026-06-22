@@ -3,8 +3,9 @@
 const AppError = require('../utils/AppError');
 
 class UserService {
-    constructor({ userModel }) {
+    constructor({ userModel, userBudgetModel }) {
         this.userModel = userModel;
+        this.userBudgetModel = userBudgetModel;
     }
 
     list() {
@@ -12,9 +13,12 @@ class UserService {
     }
 
     async getById(id) {
-        const user = await this.userModel.findById(id);
+        const [user, budgets] = await Promise.all([
+            this.userModel.findById(id),
+            this.userBudgetModel.findByUserId(id),
+        ]);
         if (!user) throw AppError.notFound('Uzytkownik nie istnieje');
-        return user;
+        return { ...user, budgets };
     }
 
     async create(payload) {
