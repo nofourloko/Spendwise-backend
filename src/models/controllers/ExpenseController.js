@@ -31,7 +31,7 @@ class ExpenseController {
 
     remove = async (req, res) => {
         await this.expenseService.remove(req.params.id);
-        res.status(204).end();
+        res.json({ data: null });
     };
 
     summary = async (req, res) => {

@@ -5,8 +5,21 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     currency VARCHAR(10) NOT NULL DEFAULT 'PLN',
+    password_hash VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Opaque, rotatable, revocable refresh tokens (stored as a SHA-256 hash).
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 
 CREATE TABLE IF NOT EXISTS user_budgets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,7 +67,7 @@ CREATE TABLE IF NOT EXISTS budget_limits (
     UNIQUE (user_id, category_id, month, year)
 );
 
-TRUNCATE TABLE expenses, budget_limits, user_budgets, users, categories RESTART IDENTITY CASCADE;
+TRUNCATE TABLE expenses, budget_limits, user_budgets, refresh_tokens, users, categories RESTART IDENTITY CASCADE;
 
 INSERT INTO categories (id, name, icon, color) VALUES
     ('a1000000-0000-0000-0000-000000000001', 'Jedzenie',        'fork-knife',     '#1D9E75'),
@@ -69,8 +82,9 @@ INSERT INTO categories (id, name, icon, color) VALUES
     ('a1000000-0000-0000-0000-000000000010', 'Inne',            'dots',           '#B4B2A9')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO users (id, email, name, currency, created_at) VALUES
-    ('b1000000-0000-0000-0000-000000000001', 'test@grosz.app', 'Jan Kowalski', 'PLN', NOW())
+-- Test user. Password: "test1234" (bcrypt via pgcrypto; verifiable by bcryptjs).
+INSERT INTO users (id, email, name, currency, password_hash, created_at) VALUES
+    ('b1000000-0000-0000-0000-000000000001', 'test@grosz.app', 'Jan Kowalski', 'PLN', crypt('test1234', gen_salt('bf', 10)), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 

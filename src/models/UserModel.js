@@ -6,7 +6,7 @@ class UserModel extends BaseModel {
     constructor(deps = {}) {
         super({
             tableName: 'users',
-            allowedFields: ['email', 'name', 'currency'],
+            allowedFields: ['email', 'name', 'currency', 'password_hash'],
             ...deps,
         });
     }

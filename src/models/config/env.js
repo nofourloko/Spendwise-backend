@@ -27,9 +27,21 @@ const env = {
     cors: {
         origin: process.env.CORS_ORIGIN || '*',
     },
+
+    jwt: {
+        // Opaque refresh tokens are random + DB-backed, so only the access
+        // token needs a signing secret.
+        accessSecret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-me',
+        accessTtl: process.env.JWT_ACCESS_TTL || '15m',
+        refreshTtlDays: parseInt(process.env.JWT_REFRESH_TTL_DAYS || '30', 10),
+    },
 };
 
 env.isProduction = env.nodeEnv === 'production';
 env.isDevelopment = env.nodeEnv === 'development';
+
+if (env.isProduction && !process.env.JWT_ACCESS_SECRET) {
+    throw new Error('Brak wymaganej zmiennej srodowiskowej: JWT_ACCESS_SECRET');
+}
 
 module.exports = env;

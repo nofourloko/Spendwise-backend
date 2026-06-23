@@ -10,6 +10,12 @@ class UserController {
         res.json({ data: users });
     };
 
+    // Resolves the caller from their bearer token (req.user set by authenticate).
+    me = async (req, res) => {
+        const user = await this.userService.getById(req.user.id);
+        res.json({ data: user });
+    };
+
     getById = async (req, res) => {
         const user = await this.userService.getById(req.params.id);
         res.json({ data: user });
@@ -27,7 +33,7 @@ class UserController {
 
     remove = async (req, res) => {
         await this.userService.remove(req.params.id);
-        res.status(204).end();
+        res.json({ data: null });
     };
 }
 

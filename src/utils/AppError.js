@@ -14,6 +14,10 @@ class AppError extends Error {
         return new AppError(message, 400, details);
     }
 
+    static unauthorized(message = 'Brak autoryzacji.') {
+        return new AppError(message, 401);
+    }
+
     static notFound(message = 'Zasob nie istnieje') {
         return new AppError(message, 404);
     }

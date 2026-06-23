@@ -1,6 +1,7 @@
 'use strict';
 
 const AppError = require('../utils/AppError');
+const sanitizeUser = require('../utils/sanitizeUser');
 
 class UserService {
     constructor({ userModel, userBudgetModel }) {
@@ -8,8 +9,9 @@ class UserService {
         this.userBudgetModel = userBudgetModel;
     }
 
-    list() {
-        return this.userModel.findAll({ orderBy: 'created_at DESC' });
+    async list() {
+        const users = await this.userModel.findAll({ orderBy: 'created_at DESC' });
+        return users.map(sanitizeUser);
     }
 
     async getById(id) {
@@ -18,24 +20,26 @@ class UserService {
             this.userBudgetModel.findByUserId(id),
         ]);
         if (!user) throw AppError.notFound('Uzytkownik nie istnieje');
-        return { ...user, budgets };
+        return { ...sanitizeUser(user), budgets };
     }
 
     async create(payload) {
         const existing = await this.userModel.findByEmail(payload.email);
         if (existing) throw AppError.conflict('Uzytkownik o tym adresie email juz istnieje');
-        return this.userModel.create(payload);
+        const user = await this.userModel.create(payload);
+        return sanitizeUser(user);
     }
 
     async update(id, payload) {
         await this.getById(id);
-        return this.userModel.update(id, payload);
+        const user = await this.userModel.update(id, payload);
+        return sanitizeUser(user);
     }
 
     async remove(id) {
         const deleted = await this.userModel.delete(id);
         if (!deleted) throw AppError.notFound('Uzytkownik nie istnieje');
-        return deleted;
+        return sanitizeUser(deleted);
     }
 }
 

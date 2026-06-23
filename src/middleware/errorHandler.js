@@ -3,14 +3,14 @@
 const env = require("../models/config/env");
 const AppError = require("../utils/AppError");
 
+// STRICT client contract: every error is a non-2xx with a top-level
+// `message` (shown directly to the user). `details` is dev-only extra info.
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
-      error: {
-        message: err.message,
-        details: err.details,
-      },
+      message: err.message,
+      details: err.details,
     });
   }
 
@@ -31,19 +31,15 @@ const errorHandler = (err, req, res, next) => {
       message: "Naruszenie ograniczenia bazy danych",
     };
     return res.status(mapped.status).json({
-      error: {
-        message: mapped.message,
-        details: env.isDevelopment ? err.detail : undefined,
-      },
+      message: mapped.message,
+      details: env.isDevelopment ? err.detail : undefined,
     });
   }
 
   console.error("[error]", err);
   return res.status(500).json({
-    error: {
-      message: "Wewnetrzny blad serwera",
-      details: env.isDevelopment ? err.message : undefined,
-    },
+    message: "Wewnetrzny blad serwera",
+    details: env.isDevelopment ? err.message : undefined,
   });
 };
 

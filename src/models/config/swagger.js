@@ -13,26 +13,72 @@ const openApiDefinition = {
     },
     servers: [
         { url: `http://localhost:${env.port}/api`, description: 'Serwer lokalny' },
+        { url: 'http://10.0.2.2:3000/api', description: 'Android emulator -> host' },
     ],
+    // Protected by default; public endpoints override with `security: []`.
+    security: [{ bearerAuth: [] }],
     tags: [
         { name: 'Health', description: 'Status serwisu' },
+        { name: 'Auth', description: 'Rejestracja, logowanie, tokeny' },
         { name: 'Users', description: 'Uzytkownicy' },
         { name: 'Categories', description: 'Kategorie wydatkow' },
         { name: 'Expenses', description: 'Wydatki' },
         { name: 'BudgetLimits', description: 'Limity budzetowe' },
     ],
     components: {
+        securitySchemes: {
+            bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'Access token: Authorization: Bearer <accessToken>',
+            },
+        },
         schemas: {
             Error: {
                 type: 'object',
                 properties: {
-                    error: {
-                        type: 'object',
-                        properties: {
-                            message: { type: 'string' },
-                            details: {},
-                        },
-                    },
+                    message: { type: 'string', description: 'Komunikat pokazywany uzytkownikowi' },
+                    details: {},
+                },
+            },
+            RegisterInput: {
+                type: 'object',
+                required: ['name', 'email', 'password'],
+                properties: {
+                    name: { type: 'string', example: 'Jan Kowalski' },
+                    email: { type: 'string', format: 'email', example: 'jan@example.com' },
+                    password: { type: 'string', format: 'password', minLength: 8, example: 'tajneHaslo123' },
+                },
+            },
+            LoginInput: {
+                type: 'object',
+                required: ['email', 'password'],
+                properties: {
+                    email: { type: 'string', format: 'email', example: 'jan@example.com' },
+                    password: { type: 'string', format: 'password', example: 'tajneHaslo123' },
+                },
+            },
+            RefreshInput: {
+                type: 'object',
+                required: ['refreshToken'],
+                properties: {
+                    refreshToken: { type: 'string', format: 'uuid', example: '9c1d4b77-2a6e-4f80-b3aa-aabbccddeeff' },
+                },
+            },
+            AuthSession: {
+                type: 'object',
+                properties: {
+                    accessToken: { type: 'string', description: 'Krotkozyciowy JWT (15 min)' },
+                    refreshToken: { type: 'string', format: 'uuid', description: 'Dlugozyciowy, rotowany przy odswiezeniu' },
+                    user: { $ref: '#/components/schemas/User' },
+                },
+            },
+            TokenPair: {
+                type: 'object',
+                properties: {
+                    accessToken: { type: 'string' },
+                    refreshToken: { type: 'string', format: 'uuid' },
                 },
             },
             User: {
@@ -179,6 +225,10 @@ const openApiDefinition = {
                 description: 'Konflikt zasobu',
                 content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
+            Unauthorized: {
+                description: 'Brak / nieprawidlowy / wygasly token (klient wymusza wylogowanie)',
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+            },
         },
     },
     paths: {
@@ -186,6 +236,7 @@ const openApiDefinition = {
             get: {
                 tags: ['Health'],
                 summary: 'Status serwisu',
+                security: [],
                 responses: {
                     200: {
                         description: 'OK',
@@ -201,6 +252,109 @@ const openApiDefinition = {
                             },
                         },
                     },
+                },
+            },
+        },
+        '/auth/register': {
+            post: {
+                tags: ['Auth'],
+                summary: 'Rejestracja',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: { 'application/json': { schema: { $ref: '#/components/schemas/RegisterInput' } } },
+                },
+                responses: {
+                    201: {
+                        description: 'Utworzono konto + wydano tokeny',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { $ref: '#/components/schemas/AuthSession' } } },
+                            },
+                        },
+                    },
+                    409: { $ref: '#/components/responses/Conflict' },
+                    422: { $ref: '#/components/responses/Unprocessable' },
+                },
+            },
+        },
+        '/auth/login': {
+            post: {
+                tags: ['Auth'],
+                summary: 'Logowanie',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginInput' } } },
+                },
+                responses: {
+                    200: {
+                        description: 'Zalogowano',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { $ref: '#/components/schemas/AuthSession' } } },
+                            },
+                        },
+                    },
+                    401: { $ref: '#/components/responses/Unauthorized' },
+                    422: { $ref: '#/components/responses/Unprocessable' },
+                },
+            },
+        },
+        '/auth/refresh': {
+            post: {
+                tags: ['Auth'],
+                summary: 'Rotacja tokenow (nowy access + refresh)',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: { 'application/json': { schema: { $ref: '#/components/schemas/RefreshInput' } } },
+                },
+                responses: {
+                    200: {
+                        description: 'Wydano nowa pare tokenow',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { $ref: '#/components/schemas/TokenPair' } } },
+                            },
+                        },
+                    },
+                    401: { $ref: '#/components/responses/Unauthorized' },
+                    422: { $ref: '#/components/responses/Unprocessable' },
+                },
+            },
+        },
+        '/auth/logout': {
+            post: {
+                tags: ['Auth'],
+                summary: 'Wylogowanie (uniewaznia refresh tokeny)',
+                responses: {
+                    200: {
+                        description: 'Wylogowano',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { type: 'null', nullable: true } } },
+                            },
+                        },
+                    },
+                    401: { $ref: '#/components/responses/Unauthorized' },
+                },
+            },
+        },
+        '/users/me': {
+            get: {
+                tags: ['Users'],
+                summary: 'Zalogowany uzytkownik (z tokenu)',
+                responses: {
+                    200: {
+                        description: 'OK',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { $ref: '#/components/schemas/User' } } },
+                            },
+                        },
+                    },
+                    401: { $ref: '#/components/responses/Unauthorized' },
                 },
             },
         },
@@ -295,7 +449,14 @@ const openApiDefinition = {
                 tags: ['Users'],
                 summary: 'Usun uzytkownika',
                 responses: {
-                    204: { description: 'Usunieto' },
+                    200: {
+                        description: 'Usunieto',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { type: 'null', nullable: true } } },
+                            },
+                        },
+                    },
                     404: { $ref: '#/components/responses/NotFound' },
                 },
             },
@@ -413,7 +574,14 @@ const openApiDefinition = {
                 tags: ['Expenses'],
                 summary: 'Usun wydatek',
                 responses: {
-                    204: { description: 'Usunieto' },
+                    200: {
+                        description: 'Usunieto',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { type: 'null', nullable: true } } },
+                            },
+                        },
+                    },
                     404: { $ref: '#/components/responses/NotFound' },
                 },
             },
@@ -507,7 +675,14 @@ const openApiDefinition = {
                 tags: ['BudgetLimits'],
                 summary: 'Usun limit budzetowy',
                 responses: {
-                    204: { description: 'Usunieto' },
+                    200: {
+                        description: 'Usunieto',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', properties: { data: { type: 'null', nullable: true } } },
+                            },
+                        },
+                    },
                     404: { $ref: '#/components/responses/NotFound' },
                 },
             },

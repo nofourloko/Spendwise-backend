@@ -24,6 +24,8 @@ const buildUserRouter = ({ userController }) => {
     ];
 
     router.get('/', asyncHandler(userController.list));
+    // `/me` must be registered before `/:id` so it isn't captured as an id.
+    router.get('/me', asyncHandler(userController.me));
     router.get('/:id', asyncHandler(userController.getById));
     router.post('/', validate(createValidators), asyncHandler(userController.create));
     router.patch('/:id', validate([...idValidators, ...updateValidators]), asyncHandler(userController.update));

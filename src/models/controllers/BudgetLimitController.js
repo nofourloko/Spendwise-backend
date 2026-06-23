@@ -36,7 +36,7 @@ class BudgetLimitController {
 
     remove = async (req, res) => {
         await this.budgetLimitService.remove(req.params.id);
-        res.status(204).end();
+        res.json({ data: null });
     };
 }
 

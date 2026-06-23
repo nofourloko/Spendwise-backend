@@ -36,7 +36,13 @@ const buildApp = (overrides = {}) => {
     swaggerUi.setup(openApiDefinition, swaggerUiOptions),
   );
 
-  app.use("/api", buildApiRouter(container.controllers));
+  app.use(
+    "/api",
+    buildApiRouter({
+      controllers: container.controllers,
+      middlewares: container.middlewares,
+    }),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);
