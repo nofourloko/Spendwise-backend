@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Idempotent: ensures the column exists on databases created before auth was
+-- added (CREATE TABLE IF NOT EXISTS won't alter an existing table).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
 -- Opaque, rotatable, revocable refresh tokens (stored as a SHA-256 hash).
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
