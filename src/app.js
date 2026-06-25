@@ -22,7 +22,9 @@ const buildApp = (overrides = {}) => {
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors({ origin: env.cors.origin }));
   app.use(compression());
-  app.use(express.json({ limit: "1mb" }));
+  // OCR receipt scans arrive as base64-encoded photos, which are far larger
+  // than ordinary JSON payloads — hence the generous limit.
+  app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true }));
 
   if (!env.isProduction) {

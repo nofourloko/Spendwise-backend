@@ -6,8 +6,21 @@ const validate = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 const { UUID_LOOSE_REGEX } = require('../utils/validators');
 
-const buildExpenseRouter = ({ expenseController }) => {
+const buildExpenseRouter = ({ expenseController, ocrController }) => {
     const router = Router();
+
+    // Receipt OCR: accepts a base64 photo, returns an OcrScanResult draft.
+    router.post(
+        '/ocr/scan',
+        validate([
+            body('image').isString().bail().notEmpty().withMessage('Brak danych obrazu (base64)'),
+            body('mimeType')
+                .isString()
+                .matches(/^image\/(jpeg|jpg|png|webp|gif)$/)
+                .withMessage('Nieobslugiwany typ obrazu'),
+        ]),
+        asyncHandler(ocrController.scan)
+    );
 
     const createValidators = [
         body('user_id').matches(UUID_LOOSE_REGEX),

@@ -35,6 +35,12 @@ const env = {
         accessTtl: process.env.JWT_ACCESS_TTL || '15m',
         refreshTtlDays: parseInt(process.env.JWT_REFRESH_TTL_DAYS || '30', 10),
     },
+
+    anthropic: {
+        // Vision model that parses receipt photos for POST /expenses/ocr/scan.
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        model: process.env.OCR_MODEL || 'claude-opus-4-8',
+    },
 };
 
 env.isProduction = env.nodeEnv === 'production';

@@ -14,6 +14,7 @@ const UserService = require("./services/UserService");
 const CategoryService = require("./services/CategoryService");
 const ExpenseService = require("./services/ExpenseService");
 const BudgetLimitService = require("./services/BudgetLimitService");
+const OcrService = require("./services/OcrService");
 const TokenService = require("./services/TokenService");
 const AuthService = require("./services/AuthService");
 
@@ -21,6 +22,7 @@ const UserController = require("./models/controllers/UserController");
 const CategoryController = require("./models/controllers/CategoryController");
 const ExpenseController = require("./models/controllers/ExpenseController");
 const BudgetLimitController = require("./models/controllers/BudgetLimitController");
+const OcrController = require("./models/controllers/OcrController");
 const AuthController = require("./models/controllers/AuthController");
 
 const buildAuthenticate = require("./middleware/authenticate");
@@ -45,6 +47,10 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
     userModel,
     categoryModel,
   });
+  const ocrService = new OcrService({
+    categoryModel,
+    anthropicConfig: env.anthropic,
+  });
   const tokenService = new TokenService({ refreshTokenModel, jwtConfig: env.jwt });
   const authService = new AuthService({ userModel, tokenService });
 
@@ -54,6 +60,7 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
   const budgetLimitController = new BudgetLimitController({
     budgetLimitService,
   });
+  const ocrController = new OcrController({ ocrService });
   const authController = new AuthController({ authService });
 
   const authenticate = buildAuthenticate({ tokenService });
@@ -73,6 +80,7 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
       categoryService,
       expenseService,
       budgetLimitService,
+      ocrService,
       tokenService,
       authService,
     },
@@ -81,6 +89,7 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
       categoryController,
       expenseController,
       budgetLimitController,
+      ocrController,
       authController,
     },
     middlewares: { authenticate },
