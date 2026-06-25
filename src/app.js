@@ -22,7 +22,7 @@ const buildApp = (overrides = {}) => {
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors({ origin: env.cors.origin }));
   app.use(compression());
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true }));
 
   if (!env.isProduction) {

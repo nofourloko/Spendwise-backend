@@ -50,6 +50,15 @@ const buildExpenseRouter = ({ expenseController }) => {
         asyncHandler(expenseController.summary)
     );
 
+    router.post(
+        '/ocr/scan',
+        validate([
+            body('image').isString().notEmpty(),
+            body('mimeType').isIn(['image/jpeg', 'image/png']),
+        ]),
+        asyncHandler(expenseController.scan)
+    );
+
     router.get('/:id', validate([param('id').matches(UUID_LOOSE_REGEX)]), asyncHandler(expenseController.getById));
     router.post('/', validate(createValidators), asyncHandler(expenseController.create));
     router.patch('/:id', validate(updateValidators), asyncHandler(expenseController.update));

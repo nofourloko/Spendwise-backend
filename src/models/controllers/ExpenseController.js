@@ -3,8 +3,9 @@
 const AppError = require('../../utils/AppError');
 
 class ExpenseController {
-    constructor({ expenseService }) {
+    constructor({ expenseService, ocrService }) {
         this.expenseService = expenseService;
+        this.ocrService = ocrService;
     }
 
     list = async (req, res) => {
@@ -32,6 +33,12 @@ class ExpenseController {
     remove = async (req, res) => {
         await this.expenseService.remove(req.params.id);
         res.json({ data: null });
+    };
+
+    scan = async (req, res) => {
+        const { image, mimeType } = req.body;
+        const data = await this.ocrService.scan(image, mimeType);
+        res.json({ data });
     };
 
     summary = async (req, res) => {

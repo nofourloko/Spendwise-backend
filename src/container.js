@@ -14,6 +14,7 @@ const UserService = require("./services/UserService");
 const CategoryService = require("./services/CategoryService");
 const ExpenseService = require("./services/ExpenseService");
 const BudgetLimitService = require("./services/BudgetLimitService");
+const OcrService = require("./services/OcrService");
 const TokenService = require("./services/TokenService");
 const AuthService = require("./services/AuthService");
 
@@ -45,12 +46,17 @@ const buildContainer = ({ db: dbClient = db } = {}) => {
     userModel,
     categoryModel,
   });
+  const ocrService = new OcrService({
+    categoryModel,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    ocrModel: process.env.OCR_MODEL,
+  });
   const tokenService = new TokenService({ refreshTokenModel, jwtConfig: env.jwt });
   const authService = new AuthService({ userModel, tokenService });
 
   const userController = new UserController({ userService });
   const categoryController = new CategoryController({ categoryService });
-  const expenseController = new ExpenseController({ expenseService });
+  const expenseController = new ExpenseController({ expenseService, ocrService });
   const budgetLimitController = new BudgetLimitController({
     budgetLimitService,
   });
